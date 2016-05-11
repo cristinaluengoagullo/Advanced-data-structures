@@ -73,6 +73,14 @@ class Quadtree {
 private:
   
   QuadtreeNode* root;
+
+  // [OJO!: Lo he puesto asi porque me era mas facil con el lio de punteros pero si no te
+  // gusta se puede quitar!!]
+  // rootRemoval es el nuevo nodo despues de borrar el que queremos, y nodeRemoval es el 
+  // nodo que se borra.
+  QuadtreeNode* rootRemoval;
+
+  QuadtreeNode* nodeRemoval;
   
   vector<Point> points;
 
@@ -80,15 +88,20 @@ private:
   
   int compare(const Point& p, QuadtreeNode* node);
 
-  int conjugate(int n);
+  int conjugate(int n) const;
 
-  QuadtreeNode* findCandidate(QuadtreeNode* node, int quadrant);
+  QuadtreeNode* findCandidate(QuadtreeNode* node, int quadrant) const;
+
+  vector<int> getCandidates(QuadtreeNode* node, const vector<QuadtreeNode*>& candidates) const;
   
+  // Inserts a whole node into the quadtree
   bool insert(QuadtreeNode* node);
 
-  bool isInCrossSection(QuadtreeNode* quadrantRoot, QuadtreeNode* deletedNode, QuadtreeNode* candidate) const;
+  bool isInCrossSection(QuadtreeNode* quadrantRoot) const;
 
-  void ADJ(QuadtreeNode* quadrantRoot, int quadrantId, QuadtreeNode* deletedNode, QuadtreeNode* candidate, Quadtree& newQuadtree);
+  bool ADJ(QuadtreeNode* quadrantRoot, int quadrantAdjId, int quadrantCandId);
+
+  void removeTerminalNode(const Point& p);
 
   bool search_rec(QuadtreeNode* node, const Point& p);
   
@@ -115,8 +128,6 @@ public:
   void regionsearch(int L, int R, int B, int T);
 
   void remove(const Point& p);
-
-  QuadtreeNode* getRoot() const;
 
   void showQuadtree() const;
 };

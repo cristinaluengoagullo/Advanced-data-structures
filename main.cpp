@@ -38,8 +38,6 @@ int main() {
   root.regionsearch(0,10,0,10);
   root.regionsearch(-2,2,-2,2);
  
-  cout << endl << "---------" << endl << endl;
-  root.showQuadtree();
   cout << endl << endl << "---------" << endl << endl;
   cout << "> removing point " << p1 << endl << endl;
   root.remove(p1);
@@ -53,4 +51,19 @@ int main() {
   root.remove(p3);
   root.showQuadtree();
   cout << endl << endl << "---------" << endl << endl;
+  cout << "> removing point " << p4 << endl << endl;
+  root.remove(p4);
+  root.showQuadtree();
+  cout << endl << endl << "---------" << endl << endl;
+  cout << "> removing point " << p5 << endl << endl;
+  root.remove(p5);
+  root.showQuadtree();
+  cout << endl << endl << "---------" << endl << endl;
+  cout << "> removing point " << p6 << endl << endl;
+  root.remove(p6);
+  root.showQuadtree();
+  cout << endl << endl << "---------" << endl << endl;
+  cout << "> removing point " << p10 << endl << endl;
+  root.remove(p10);
+  root.showQuadtree();
 }

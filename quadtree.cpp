@@ -110,11 +110,11 @@ void Quadtree::regionsearch_rec(QuadtreeNode* node, int L, int R, int B, int T){
 	if (node->quadrants[3] and rectangle_overlaps_region(x,R,B,y)) regionsearch_rec(node->quadrants[3],x,R,B,y);	
 }
 
-int Quadtree::conjugate(int n) {
+int Quadtree::conjugate(int n) const {
   return ((n+1) % 4) + 1;
 }
 
-QuadtreeNode* Quadtree::findCandidate(QuadtreeNode* node, int quadrant) {
+QuadtreeNode* Quadtree::findCandidate(QuadtreeNode* node, int quadrant) const{
   if(node) {
     int conj = conjugate(quadrant);
     QuadtreeNode* candidate = findCandidate(node->quadrants[conj-1],conj);
@@ -124,51 +124,98 @@ QuadtreeNode* Quadtree::findCandidate(QuadtreeNode* node, int quadrant) {
   return node;
 }
 
-bool Quadtree::isInCrossSection(QuadtreeNode* quadrantRoot, QuadtreeNode* deletedNode, QuadtreeNode* candidate) const {
-  if(deletedNode->point.x < candidate->point.x) {
-    if(quadrantRoot->point.x >= deletedNode->point.x and quadrantRoot->point.x <= candidate->point.x) 
+// We assume that the candidate for replacement of the node to remove has already been computed
+// before calling this function.
+bool Quadtree::isInCrossSection(QuadtreeNode* quadrantRoot) const {
+  if(nodeRemoval->point.x < rootRemoval->point.x) {
+    if(quadrantRoot->point.x >= nodeRemoval->point.x and quadrantRoot->point.x <= rootRemoval->point.x) 
       return true;
   }
   else {
-    if(quadrantRoot->point.x >= candidate->point.x and quadrantRoot->point.x <= deletedNode->point.x) 
+    if(quadrantRoot->point.x >= rootRemoval->point.x and quadrantRoot->point.x <= nodeRemoval->point.x) 
       return true;
   }
-  if(deletedNode->point.y < candidate->point.y) {
-    if(quadrantRoot->point.y >= deletedNode->point.y and quadrantRoot->point.y <= candidate->point.y)
+  if(nodeRemoval->point.y < rootRemoval->point.y) {
+    if(quadrantRoot->point.y >= nodeRemoval->point.y and quadrantRoot->point.y <= rootRemoval->point.y)
       return true;
   }
   else {
-    if(quadrantRoot->point.y >= candidate->point.y and quadrantRoot->point.y <= deletedNode->point.y)
+    if(quadrantRoot->point.y >= rootRemoval->point.y and quadrantRoot->point.y <= nodeRemoval->point.y)
       return true;
   }
   return false;
 }
 
-// [Le paso el quadtree nuevo que queda porque me parecia mas follon editar el quadtree que llevasemos hasta ahora!]
-void Quadtree::ADJ(QuadtreeNode* quadrantRoot, int quadrantId, QuadtreeNode* deletedNode, QuadtreeNode* candidate, Quadtree& newQuadtree) {
+bool Quadtree::ADJ(QuadtreeNode* quadrantRoot, int quadrantAdjId, int quadrantCandId) {
   if(quadrantRoot) {
-    if(isInCrossSection(quadrantRoot,deletedNode,candidate)) {
-      newQuadtree.insert(quadrantRoot);
+    if(isInCrossSection(quadrantRoot)) {
+      insert(quadrantRoot);
+      return true;
     }
     else {
-      if(quadrantId == NE or quadrantId == NW) {
-	QuadtreeNode* se = quadrantRoot->quadrants[SE-1];
-	QuadtreeNode* sw = quadrantRoot->quadrants[SW-1];
-	quadrantRoot->quadrants[SE-1] = NULL;
-	quadrantRoot->quadrants[SW-1] = NULL;
-	newQuadtree.insert(quadrantRoot);
-	ADJ(sw,SW,deletedNode,candidate,newQuadtree);
-	ADJ(se,SE,deletedNode,candidate,newQuadtree);
+      int q1, q2;
+      switch(quadrantAdjId) {
+      case NE:
+	if(quadrantCandId == NW) { q1 = SW; q2 = SE; }
+	else if(quadrantCandId == SE) { q1 = NW; q2 = SW; } break;
+      case NW:
+	if(quadrantCandId == NE) { q1 = SW; q2 = SE; }
+	else if(quadrantCandId == SW) { q1 = NE; q2 = SE; } break;
+      case SW:
+	if(quadrantCandId == NW) { q1 = NE; q2 = SE; }
+	else if(quadrantCandId == SE) { q1 = NW; q2 = NE; } break;
+      case SE:
+	if(quadrantCandId == NE) { q1 = NW; q2 = SW; }
+	else if(quadrantCandId == SW) { q1 = NW; q2 = NE; } break;
       }
-      else if(quadrantId == SE or quadrantId == SW) {
-	QuadtreeNode* ne = quadrantRoot->quadrants[NE-1];
-	QuadtreeNode* nw = quadrantRoot->quadrants[NW-1];
-	quadrantRoot->quadrants[NE-1] = NULL;
-	quadrantRoot->quadrants[NW-1] = NULL;
-	newQuadtree.insert(quadrantRoot);
-	ADJ(nw,NW,deletedNode,candidate,newQuadtree);
-	ADJ(ne,NE,deletedNode,candidate,newQuadtree);
+      QuadtreeNode* q = quadrantRoot->quadrants[q1-1];
+      quadrantRoot->quadrants[q1-1] = NULL;
+      bool newInsertion = ADJ(q,quadrantAdjId,quadrantCandId);
+      if(not newInsertion) quadrantRoot->quadrants[q1-1] = q;
+      q = quadrantRoot->quadrants[q2-1];
+      quadrantRoot->quadrants[q2-1] = NULL;
+      ADJ(q,quadrantAdjId,quadrantCandId);
+      if(not newInsertion) quadrantRoot->quadrants[q2-1] = q;
+    }
+  }
+  return false;
+}
+
+vector<int> Quadtree::getCandidates(QuadtreeNode* node, const vector<QuadtreeNode*>& candidates) const {
+  vector<int> finalCandidates;
+  // Choose as candidate the one that is closer to each of its bordering axes than any other candidate which is on the
+  // same side of these axes.
+  if(abs(candidates[NE-1]->point.x - node->point.x) < abs(candidates[SE-1]->point.x - node->point.x)) {
+    if(abs(candidates[NE-1]->point.y - node->point.y) < abs(candidates[NW-1]->point.y - node->point.y))
+      finalCandidates.push_back(NE-1);
+  }
+  if(abs(candidates[NW-1]->point.x - node->point.x) < abs(candidates[SW-1]->point.x - node->point.x)) {
+    if(abs(candidates[NW-1]->point.y - node->point.y) < abs(candidates[NE-1]->point.y - node->point.y))
+      finalCandidates.push_back(NW-1);
+  }
+  if(abs(candidates[SW-1]->point.x - node->point.x) < abs(candidates[NW-1]->point.x - node->point.x)) {
+    if(abs(candidates[SW-1]->point.y - node->point.y) < abs(candidates[SE-1]->point.y - node->point.y))
+      finalCandidates.push_back(SW-1);
+  }
+  if(abs(candidates[SE-1]->point.x - node->point.x) < abs(candidates[NE-1]->point.x - node->point.x)) {
+    if(abs(candidates[SE-1]->point.y - node->point.y) < abs(candidates[SW-1]->point.y - node->point.y))
+      finalCandidates.push_back(SE-1);
+  }
+  return finalCandidates;
+}
+
+void Quadtree::removeTerminalNode(const Point& p) {
+  if(root) {
+    int direction = compare(p,root);
+    if(not direction) root = NULL;
+    QuadtreeNode** quadrant = &(root->quadrants[direction-1]);
+    while(*quadrant) {
+      direction = compare(p,*quadrant);
+      if(not direction) {
+	*quadrant = NULL;
+	break;
       }
+      quadrant = &((*quadrant)->quadrants[direction-1]);
     }
   }
 }
@@ -176,55 +223,58 @@ void Quadtree::ADJ(QuadtreeNode* quadrantRoot, int quadrantId, QuadtreeNode* del
 void Quadtree::remove(const Point& p) {
   QuadtreeNode* node = searchNode(root,p);
   if(node) {
-    vector<QuadtreeNode*> candidates(4);
-    cout << "-- Candidates -- " << endl;
+    bool terminalNode = true;
     for(int i = 0; i < 4; i++) {
-      candidates[i] = findCandidate(node->quadrants[i],i+1);
-      if(not candidates[i]) {
-	candidates[i] = new QuadtreeNode;
-	candidates[i]->point = Point(INT_MAX,INT_MAX);
+      if(node->quadrants[i]) {
+	terminalNode = false;
+	break;
       }
-      cout << candidates[i]->point << endl;
     }
-    cout << "-------" << endl;
-    vector<int> finalCandidates;
-    // Choose as candidate the one that is closer to each of its bordering axes than any other candidate which is on the
-    // same side of these axes.
-    if(candidates[NE-1]->point.x < candidates[SE-1]->point.x and candidates[NE-1]->point.y < candidates[NW-1]->point.y) 
-      finalCandidates.push_back(NE-1);
-    else if(candidates[NW-1]->point.x > candidates[SW-1]->point.x and candidates[NW-1]->point.y < candidates[NE-1]->point.y) 
-      finalCandidates.push_back(NW-1);
-    else if(candidates[SW-1]->point.x > candidates[NW-1]->point.x and candidates[SW-1]->point.y > candidates[SE-1]->point.y) 
-      finalCandidates.push_back(SW-1);
-    else if(candidates[SE-1]->point.x < candidates[NE-1]->point.x and candidates[SE-1]->point.y > candidates[SW-1]->point.y) 
-      finalCandidates.push_back(SE-1);
-    int candidateQuadrant = 0;
-    // If none of the candidates or several of them meet the property, we choose the candidate with minimum L1 metric value.
-    // The L1 metric measures the minimum sum of horizontal and vertical displacements from the node to be deleted. 
-    if(finalCandidates.empty() or finalCandidates.size() > 1) {
-      int minSum = INT_MAX; 
+    // If it is a terminal node, remove directly just by cutting links with its root.
+    if(terminalNode) removeTerminalNode(node->point);
+    else {
+      vector<QuadtreeNode*> candidates(4);
       for(int i = 0; i < 4; i++) {
-	int sum = abs(candidates[i]->point.x - node->point.x) + abs(candidates[i]->point.y - node->point.y);
-	if(sum < minSum) {
-	  minSum = sum;
-	  candidateQuadrant = i;
+	candidates[i] = findCandidate(node->quadrants[i],i+1);
+	if(not candidates[i]) {
+	  candidates[i] = new QuadtreeNode;
+	  candidates[i]->point = Point(INT_MAX,INT_MAX);
 	}
       }
+      vector<int> finalCandidates = getCandidates(node,candidates);
+      int candidateQuadrant = 0;
+      // If none of the candidates or several of them meet the property, we choose the candidate with minimum L1 metric value.
+      // The L1 metric measures the minimum sum of horizontal and vertical displacements from the node to be deleted. 
+      if(finalCandidates.empty() or finalCandidates.size() > 1) {
+	int minSum = INT_MAX; 
+	for(int i = 0; i < 4; i++) {
+	  int sum = abs(candidates[i]->point.x - node->point.x) + abs(candidates[i]->point.y - node->point.y);
+	  if(sum < minSum) {
+	    minSum = sum;
+	    candidateQuadrant = i;
+	  }
+	}
+      }
+      else candidateQuadrant = finalCandidates[0];
+      // [OJO: He puesto esto para no perder la info de los nodos porque en el Newroot se necesita, 
+      // pero ponlo como quieras!]
+      nodeRemoval = new QuadtreeNode;
+      *nodeRemoval = *node;
+      rootRemoval = new QuadtreeNode;
+      *rootRemoval = *candidates[candidateQuadrant];
+      // The conjugate quadrant remains the same.
+      candidates[candidateQuadrant]->quadrants[conjugate(candidateQuadrant+1)-1] = node->quadrants[conjugate(candidateQuadrant+1)-1];
+      // [OJO!: Se que esto sobrescribe lo que hubiese en los cuadrantes del candidato, pero de momento lo dejo asi porque 
+      // se tendra que acabar poniendo lo que hubiese en el nodo a borrar en el nodo nuevo! De todas maneras, la info 
+      // de los cuadrantes del nodo nuevo esta en rootRemoval.]
+      candidates[candidateQuadrant]->quadrants[(candidateQuadrant+1)%4] = node->quadrants[(candidateQuadrant+1)%4];
+      candidates[candidateQuadrant]->quadrants[(candidateQuadrant+3)%4] = node->quadrants[(candidateQuadrant+3)%4];
+      *node = *candidates[candidateQuadrant];
+      // Adjacent quadrants to the one containing the candidate new root.
+      ADJ(node->quadrants[(candidateQuadrant+1)%4],(candidateQuadrant+1)%4+1,candidateQuadrant+1);
+      ADJ(node->quadrants[(candidateQuadrant+3)%4],(candidateQuadrant+3)%4+1,candidateQuadrant+1);
     }
-    else candidateQuadrant = finalCandidates[0];
-    Quadtree newQuadtree;
-    newQuadtree.insert(candidates[candidateQuadrant]);
-    newQuadtree.insert(node->quadrants[(candidateQuadrant+2)%4]);
-    ADJ(node->quadrants[(candidateQuadrant+1)%4],(candidateQuadrant+2)%4,node,candidates[candidateQuadrant],newQuadtree);
-    ADJ(node->quadrants[(candidateQuadrant+3)%4],(candidateQuadrant+3)%4,node,candidates[candidateQuadrant],newQuadtree);
-    // [De momento asi pero porque me parecia mas follon editar el quadtree que llevasemos construido hasta ahora]
-    root = new QuadtreeNode;
-    root->clone(newQuadtree.getRoot());
   }
-}
-
-QuadtreeNode* Quadtree::getRoot() const {
-  return root;
 }
 
 void Quadtree::showQuadtree() const {
