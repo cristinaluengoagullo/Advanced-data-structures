@@ -3,16 +3,21 @@
 
 #include <limits>  
 #include <stdlib.h> 
+#include <ctime>
 #include "SkipNode.hpp"
 
 template <class T>
 
+// Set class: implements a skip list.
 class Set {
 
 private:
 
+  // head denotes the head of the skip list (it has the minimum integer value).
   SkipNode<T>* head;
+  // head denotes the head of the skip list (it has the maximum integer value).
   SkipNode<T>* tail;
+  // q denotes the probability 
   float q;
   int maxHeight;
   int currHeight;
@@ -53,6 +58,10 @@ public :
 
   SkipNode<T>* getCurrHeight() const;
 
+  int total_search_cost(int l, int r) const;
+  
+  int number_pointers() const;
+
   void print() const;
 };
 
@@ -82,9 +91,8 @@ template <class T> void Set<T>::insert(const T& x) {
   SkipNode<T>* tmp = head;
   // Figure out where new node goes
   for(int h = currHeight; h > 0; h--) {
-    while (tmp->forward[h]->getKey() < x) {
+    while(tmp->forward[h]->getKey() < x)
 	tmp = tmp->forward[h];
-      }
     update[h] = tmp;
   }
   tmp = tmp->forward[1];
@@ -111,9 +119,8 @@ template <class T> void Set<T>::remove(const T& x) {
   SkipNode<T>* tmp = head;
   // Find the node we need to delete
   for(int i = currHeight; i > 0; i--) {
-    while(tmp->forward[i]->getKey() < x) {
+    while(tmp->forward[i]->getKey() < x)
       tmp = tmp->forward[i];
-    }
     update[i] = tmp;
   }
   tmp = tmp->forward[1];
@@ -144,10 +151,10 @@ template <class T> bool Set<T>::contains(const T& x) const {
 
 template <class T> int Set<T>::getNewHeight() const {
   int tmpLvl = 1;
-  // Develop a random number between 1 and
-  // maxLvl (node height).
-  while((((double)rand() / RAND_MAX)) < q and abs(tmpLvl) < maxHeight) 
+  // Develop a random number between 1 and maxLvl (node height).
+  while(((double)(rand()) / RAND_MAX < q) and tmpLvl < maxHeight) {
     tmpLvl++;
+  }
   return tmpLvl;
 }
 
@@ -169,6 +176,35 @@ template <class T> SkipNode<T>* Set<T>::getMaxHeight() const {
 
 template <class T> SkipNode<T>* Set<T>::getCurrHeight() const {
   return currHeight;
+}
+
+template <class T> int Set<T>::total_search_cost(int l, int r) const {
+  if(l > r) return 0;
+  if(l == r) return 1;
+  SkipNode<T>* tmp = head;
+  SkipNode<T>* maxNode;
+  int maxHeight = 0;
+  for(int i = 0; i < l; i++) 
+    tmp = tmp->forward[1];
+  for(int i = l; i < r; i++) {    
+    if(maxHeight < tmp->getHeight()) {
+      maxNode = tmp;
+      maxHeight = tmp->getHeight();
+    }
+    tmp = tmp->forward[1];
+  }
+  return (r-l) + 1 + total_search_cost(l,maxNode->getKey()-1) + total_search_cost(maxNode->getKey()+1,r);
+}
+
+template <class T> int Set<T>::number_pointers() const {
+  SkipNode<T>* tmp;
+  int sum = 0;
+  tmp = head;
+  while(tmp != tail) {
+    sum += tmp->getHeight();
+    tmp = tmp->forward[1];
+  }
+  return sum;
 }
 
 template <class T> void Set<T>::print() const {
