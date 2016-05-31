@@ -1,7 +1,7 @@
 #include "Set.hpp"
 #include <math.h>
 
-const int NUMBER_LISTS = 1;
+const int NUMBER_LISTS = 100;
 const double GAMMA = 0.5772156649;
 
 int main(int argc, char **argv) {
@@ -34,3 +34,4 @@ int main(int argc, char **argv) {
     cout << "+++++++++++++++++++" << endl;
   }
 }
+
