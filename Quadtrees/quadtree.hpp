@@ -82,6 +82,8 @@ private:
 
   QuadtreeNode* nodeRemoval;
   
+  vector<QuadtreeNode*> reinsertions;
+
   vector<Point> points;
 
   int LP,RP,BP,TP;

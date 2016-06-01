@@ -50,10 +50,8 @@ bool Quadtree::insert(QuadtreeNode* node) {
     QuadtreeNode** quadrant = &(root->quadrants[direction-1]);
     while(*quadrant) {
       direction = compare(node->point,*quadrant);
-      cout << "direction = " << direction << endl; 
       if(not direction) return false;
       quadrant = &((*quadrant)->quadrants[direction-1]);
-      cout << "After" << endl;
     }
     *quadrant = new QuadtreeNode;
     *(*quadrant) = *node;
@@ -174,9 +172,8 @@ void Quadtree::NewRoot(QuadtreeNode* quadrantRoot, int direction){
 
 bool Quadtree::ADJ(QuadtreeNode* quadrantRoot, int quadrantAdjId, int quadrantCandId) {
   if(quadrantRoot) {
-    this->showQuadtree();
     if(isInCrossSection(quadrantRoot)) {
-      insert(quadrantRoot);
+      reinsertions.push_back(quadrantRoot);
       return true;
     }
     else {
@@ -198,11 +195,9 @@ bool Quadtree::ADJ(QuadtreeNode* quadrantRoot, int quadrantAdjId, int quadrantCa
       QuadtreeNode* q = quadrantRoot->quadrants[q1-1];
       quadrantRoot->quadrants[q1-1] = NULL;
       bool newInsertion = ADJ(q,quadrantAdjId,quadrantCandId);
-      if(not newInsertion) quadrantRoot->quadrants[q1-1] = q;
       q = quadrantRoot->quadrants[q2-1];
       quadrantRoot->quadrants[q2-1] = NULL;
       newInsertion = ADJ(q,quadrantAdjId,quadrantCandId);
-      if(not newInsertion) quadrantRoot->quadrants[q2-1] = q;
     }
   }
   return false;
@@ -250,6 +245,7 @@ void Quadtree::removeTerminalNode(const Point& p) {
 void Quadtree::remove(const Point& p) {
   QuadtreeNode* node = searchNode(root,p);
   if(node) {
+    reinsertions = vector<QuadtreeNode*>();
     bool terminalNode = true;
     for(int i = 0; i < 4; i++) {
       if(node->quadrants[i]) {
@@ -303,6 +299,12 @@ void Quadtree::remove(const Point& p) {
       ADJ(node->quadrants[(candidateQuadrant+1)%4],(candidateQuadrant+1)%4+1,candidateQuadrant+1);
       ADJ(node->quadrants[(candidateQuadrant+3)%4],(candidateQuadrant+3)%4+1,candidateQuadrant+1);
 	//NewRoot(node->quadrants[candidateQuadrant],conjugate(candidateQuadrant+1)-1);
+      cout << "Reinsertions: " << endl;
+      for(int i = 0; i < reinsertions.size(); i++) {
+	insert(reinsertions[i]);
+	cout << reinsertions[i]->point << endl;
+      }
+      cout << "-----------" << endl;
     }
   }
 }
