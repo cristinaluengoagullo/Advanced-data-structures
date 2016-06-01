@@ -73,14 +73,6 @@ class Quadtree {
 private:
   
   QuadtreeNode* root;
-
-  // [OJO!: Lo he puesto asi porque me era mas facil con el lio de punteros pero si no te
-  // gusta se puede quitar!!]
-  // rootRemoval es el nuevo nodo despues de borrar el que queremos, y nodeRemoval es el 
-  // nodo que se borra.
-  QuadtreeNode* rootRemoval;
-
-  QuadtreeNode* nodeRemoval;
   
   vector<QuadtreeNode*> reinsertions;
 
@@ -99,11 +91,11 @@ private:
   // Inserts a whole node into the quadtree
   bool insert(QuadtreeNode* node);
 
-  bool isInCrossSection(QuadtreeNode* quadrantRoot) const;
+  bool isInCrossSection(QuadtreeNode* quadrantRoot, QuadtreeNode* rootRemoval, QuadtreeNode* nodeRemoval) const;
 
-  bool ADJ(QuadtreeNode* quadrantRoot, int quadrantAdjId, int quadrantCandId);
+  bool ADJ(QuadtreeNode* quadrantRoot,  QuadtreeNode* rootRemoval, QuadtreeNode* nodeRemoval, int quadrantAdjId, int quadrantCandId);
   
-  void NewRoot(QuadtreeNode* quadrantRoot, int direction);
+  //void NewRoot(QuadtreeNode* quadrantRoot, int direction);
 
   void removeTerminalNode(const Point& p);
 

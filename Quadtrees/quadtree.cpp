@@ -132,7 +132,7 @@ QuadtreeNode* Quadtree::findCandidate(QuadtreeNode* node, int quadrant) const{
 
 // We assume that the candidate for replacement of the node to remove has already been computed
 // before calling this function.
-bool Quadtree::isInCrossSection(QuadtreeNode* quadrantRoot) const {
+bool Quadtree::isInCrossSection(QuadtreeNode* quadrantRoot, QuadtreeNode* rootRemoval, QuadtreeNode* nodeRemoval) const {
   if(nodeRemoval->point.x < rootRemoval->point.x) {
     if(quadrantRoot->point.x >= nodeRemoval->point.x and quadrantRoot->point.x <= rootRemoval->point.x) 
       return true;
@@ -152,7 +152,7 @@ bool Quadtree::isInCrossSection(QuadtreeNode* quadrantRoot) const {
   return false;
 }
 
-void Quadtree::NewRoot(QuadtreeNode* quadrantRoot, int direction){
+/*void Quadtree::NewRoot(QuadtreeNode* quadrantRoot, int direction){
 	if(quadrantRoot){
 		int q1,q2;
 		q1 = (direction+1) % 4;
@@ -168,11 +168,11 @@ void Quadtree::NewRoot(QuadtreeNode* quadrantRoot, int direction){
 		insert(quadrantRoot->quadrants[q2]);
 		father->quadrants[direction] = quadrantRoot->quadrants[(direction+2)%4];
 	}	
-}
+	}*/
 
-bool Quadtree::ADJ(QuadtreeNode* quadrantRoot, int quadrantAdjId, int quadrantCandId) {
+bool Quadtree::ADJ(QuadtreeNode* quadrantRoot, QuadtreeNode* rootRemoval, QuadtreeNode* nodeRemoval, int quadrantAdjId, int quadrantCandId) {
   if(quadrantRoot) {
-    if(isInCrossSection(quadrantRoot)) {
+    if(isInCrossSection(quadrantRoot,rootRemoval,nodeRemoval)) {
       reinsertions.push_back(quadrantRoot);
       return true;
     }
@@ -194,10 +194,12 @@ bool Quadtree::ADJ(QuadtreeNode* quadrantRoot, int quadrantAdjId, int quadrantCa
       }
       QuadtreeNode* q = quadrantRoot->quadrants[q1-1];
       quadrantRoot->quadrants[q1-1] = NULL;
-      bool newInsertion = ADJ(q,quadrantAdjId,quadrantCandId);
+      bool newInsertion = ADJ(q,rootRemoval,nodeRemoval,quadrantAdjId,quadrantCandId);
+      if(not newInsertion) quadrantRoot->quadrants[q1-1] = q;
       q = quadrantRoot->quadrants[q2-1];
       quadrantRoot->quadrants[q2-1] = NULL;
-      newInsertion = ADJ(q,quadrantAdjId,quadrantCandId);
+      newInsertion = ADJ(q,rootRemoval,nodeRemoval,quadrantAdjId,quadrantCandId);
+      if(not newInsertion) quadrantRoot->quadrants[q2-1] = q;
     }
   }
   return false;
@@ -281,23 +283,14 @@ void Quadtree::remove(const Point& p) {
 	}
       }
       else candidateQuadrant = finalCandidates[0];
-      // [OJO: He puesto esto para no perder la info de los nodos porque en el Newroot se necesita, 
-      // pero ponlo como quieras!]
-      nodeRemoval = new QuadtreeNode;
-      *nodeRemoval = *node;
-      rootRemoval = new QuadtreeNode;
-      *rootRemoval = *candidates[candidateQuadrant];
       // The conjugate quadrant remains the same.
       candidates[candidateQuadrant]->quadrants[conjugate(candidateQuadrant+1)-1] = node->quadrants[conjugate(candidateQuadrant+1)-1];
-      // [OJO!: Se que esto sobrescribe lo que hubiese en los cuadrantes del candidato, pero de momento lo dejo asi porque 
-      // se tendra que acabar poniendo lo que hubiese en el nodo a borrar en el nodo nuevo! De todas maneras, la info 
-      // de los cuadrantes del nodo nuevo esta en rootRemoval.]
       candidates[candidateQuadrant]->quadrants[(candidateQuadrant+1)%4] = node->quadrants[(candidateQuadrant+1)%4];
       candidates[candidateQuadrant]->quadrants[(candidateQuadrant+3)%4] = node->quadrants[(candidateQuadrant+3)%4];
       *node = *candidates[candidateQuadrant];
       // Adjacent quadrants to the one containing the candidate new root.
-      ADJ(node->quadrants[(candidateQuadrant+1)%4],(candidateQuadrant+1)%4+1,candidateQuadrant+1);
-      ADJ(node->quadrants[(candidateQuadrant+3)%4],(candidateQuadrant+3)%4+1,candidateQuadrant+1);
+      ADJ(node->quadrants[(candidateQuadrant+1)%4],candidates[candidateQuadrant],node,(candidateQuadrant+1)%4+1,candidateQuadrant+1);
+      ADJ(node->quadrants[(candidateQuadrant+3)%4],candidates[candidateQuadrant],node,(candidateQuadrant+3)%4+1,candidateQuadrant+1);
 	//NewRoot(node->quadrants[candidateQuadrant],conjugate(candidateQuadrant+1)-1);
       cout << "Reinsertions: " << endl;
       for(int i = 0; i < reinsertions.size(); i++) {
