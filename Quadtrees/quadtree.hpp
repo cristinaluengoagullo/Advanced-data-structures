@@ -100,6 +100,8 @@ private:
   bool isInCrossSection(QuadtreeNode* quadrantRoot) const;
 
   bool ADJ(QuadtreeNode* quadrantRoot, int quadrantAdjId, int quadrantCandId);
+  
+  void NewRoot(QuadtreeNode* quadrantRoot, int direction);
 
   void removeTerminalNode(const Point& p);
 

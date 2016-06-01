@@ -19,6 +19,7 @@ int Quadtree::compare(const Point& p, QuadtreeNode* node) {
     if(p.y >= node->point.y) return NW;
     else return SW;    
   }
+  return 0;
 }
 
 bool Quadtree::insert(const Point& p) {
@@ -33,6 +34,7 @@ bool Quadtree::insert(const Point& p) {
   QuadtreeNode** quadrant = &(root->quadrants[direction-1]);
   while(*quadrant) {
     direction = compare(p,*quadrant);
+    if(not direction) return false;
     quadrant = &((*quadrant)->quadrants[direction-1]);
   }
   *quadrant = new QuadtreeNode;
@@ -43,13 +45,20 @@ bool Quadtree::insert(const Point& p) {
 
 bool Quadtree::insert(QuadtreeNode* node) {
   if(node) {
-    if(not insert(node->point)) return false;
-    for(int i = 0; i < 4; i++) {
-      insert(node->quadrants[i]);
+    int direction = compare(node->point,root);
+    if(not direction) return false;
+    QuadtreeNode** quadrant = &(root->quadrants[direction-1]);
+    while(*quadrant) {
+      direction = compare(node->point,*quadrant);
+      cout << "direction = " << direction << endl; 
+      if(not direction) return false;
+      quadrant = &((*quadrant)->quadrants[direction-1]);
+      cout << "After" << endl;
     }
+    *quadrant = new QuadtreeNode;
+    *(*quadrant) = *node;
     return true;
   }
-  return false;
 }
 
 void Quadtree::search(const Point& p){
@@ -116,8 +125,7 @@ int Quadtree::conjugate(int n) const {
 
 QuadtreeNode* Quadtree::findCandidate(QuadtreeNode* node, int quadrant) const{
   if(node) {
-    int conj = conjugate(quadrant);
-    QuadtreeNode* candidate = findCandidate(node->quadrants[conj-1],conj);
+    QuadtreeNode* candidate = findCandidate(node->quadrants[quadrant-1],quadrant);
     if(not candidate) return node;
     return candidate;
   }
@@ -146,8 +154,27 @@ bool Quadtree::isInCrossSection(QuadtreeNode* quadrantRoot) const {
   return false;
 }
 
+void Quadtree::NewRoot(QuadtreeNode* quadrantRoot, int direction){
+	if(quadrantRoot){
+		int q1,q2;
+		q1 = (direction+1) % 4;
+		q2 = (direction-1) % 4;
+		QuadtreeNode* father = quadrantRoot;
+		while(quadrantRoot->quadrants[direction]){
+			ADJ(quadrantRoot->quadrants[q1],direction+1,conjugate(direction+1));
+			ADJ(quadrantRoot->quadrants[q2],direction+1,conjugate(direction+1));
+			father = quadrantRoot;
+			quadrantRoot = quadrantRoot->quadrants[direction];	
+		}
+		insert(quadrantRoot->quadrants[q1]);
+		insert(quadrantRoot->quadrants[q2]);
+		father->quadrants[direction] = quadrantRoot->quadrants[(direction+2)%4];
+	}	
+}
+
 bool Quadtree::ADJ(QuadtreeNode* quadrantRoot, int quadrantAdjId, int quadrantCandId) {
   if(quadrantRoot) {
+    this->showQuadtree();
     if(isInCrossSection(quadrantRoot)) {
       insert(quadrantRoot);
       return true;
@@ -174,7 +201,7 @@ bool Quadtree::ADJ(QuadtreeNode* quadrantRoot, int quadrantAdjId, int quadrantCa
       if(not newInsertion) quadrantRoot->quadrants[q1-1] = q;
       q = quadrantRoot->quadrants[q2-1];
       quadrantRoot->quadrants[q2-1] = NULL;
-      ADJ(q,quadrantAdjId,quadrantCandId);
+      newInsertion = ADJ(q,quadrantAdjId,quadrantCandId);
       if(not newInsertion) quadrantRoot->quadrants[q2-1] = q;
     }
   }
@@ -235,7 +262,7 @@ void Quadtree::remove(const Point& p) {
     else {
       vector<QuadtreeNode*> candidates(4);
       for(int i = 0; i < 4; i++) {
-	candidates[i] = findCandidate(node->quadrants[i],i+1);
+	candidates[i] = findCandidate(node->quadrants[i],conjugate(i+1));
 	if(not candidates[i]) {
 	  candidates[i] = new QuadtreeNode;
 	  candidates[i]->point = Point(INT_MAX,INT_MAX);
@@ -248,7 +275,9 @@ void Quadtree::remove(const Point& p) {
       if(finalCandidates.empty() or finalCandidates.size() > 1) {
 	int minSum = INT_MAX; 
 	for(int i = 0; i < 4; i++) {
-	  int sum = abs(candidates[i]->point.x - node->point.x) + abs(candidates[i]->point.y - node->point.y);
+	  int sum = INT_MAX;
+	  if(candidates[i]->point.x < INT_MAX) 
+	    sum = abs(candidates[i]->point.x - node->point.x) + abs(candidates[i]->point.y - node->point.y);
 	  if(sum < minSum) {
 	    minSum = sum;
 	    candidateQuadrant = i;
@@ -273,6 +302,7 @@ void Quadtree::remove(const Point& p) {
       // Adjacent quadrants to the one containing the candidate new root.
       ADJ(node->quadrants[(candidateQuadrant+1)%4],(candidateQuadrant+1)%4+1,candidateQuadrant+1);
       ADJ(node->quadrants[(candidateQuadrant+3)%4],(candidateQuadrant+3)%4+1,candidateQuadrant+1);
+	//NewRoot(node->quadrants[candidateQuadrant],conjugate(candidateQuadrant+1)-1);
     }
   }
 }
