@@ -152,23 +152,36 @@ bool Quadtree::isInCrossSection(QuadtreeNode* quadrantRoot, QuadtreeNode* rootRe
   return false;
 }
 
-/*void Quadtree::NewRoot(QuadtreeNode* quadrantRoot, int direction){
+void Quadtree::NewRoot(QuadtreeNode* quadrantRoot, QuadtreeNode* rootRemoval, QuadtreeNode* nodeRemoval, int direction){
 	if(quadrantRoot){
 		int q1,q2;
 		q1 = (direction+1) % 4;
 		q2 = (direction-1) % 4;
 		QuadtreeNode* father = quadrantRoot;
 		while(quadrantRoot->quadrants[direction]){
-			ADJ(quadrantRoot->quadrants[q1],direction+1,conjugate(direction+1));
-			ADJ(quadrantRoot->quadrants[q2],direction+1,conjugate(direction+1));
+			QuadtreeNode* q = quadrantRoot->quadrants[q1];
+			quadrantRoot->quadrants[q1] = NULL;
+			bool newInsertion = ADJ(q,rootRemoval,nodeRemoval,q1+1,conjugate(direction+1));
+			if(not newInsertion) quadrantRoot->quadrants[q1] = q;
+			q = quadrantRoot->quadrants[q2];
+			quadrantRoot->quadrants[q2] = NULL;
+			newInsertion = ADJ(q,rootRemoval,nodeRemoval,q2+1,conjugate(direction+1));
+			if(not newInsertion) quadrantRoot->quadrants[q2] = q;
 			father = quadrantRoot;
 			quadrantRoot = quadrantRoot->quadrants[direction];	
 		}
-		insert(quadrantRoot->quadrants[q1]);
-		insert(quadrantRoot->quadrants[q2]);
+		if(quadrantRoot->quadrants[q1]){
+			reinsertions.push_back(quadrantRoot->quadrants[q1]);
+			quadrantRoot->quadrants[q1] = NULL;	
+		}
+		if(quadrantRoot->quadrants[q2]){
+			reinsertions.push_back(quadrantRoot->quadrants[q2]);
+			quadrantRoot->quadrants[q2] = NULL;
+		}
 		father->quadrants[direction] = quadrantRoot->quadrants[(direction+2)%4];
+		quadrantRoot->quadrants[(direction+2)%4] = NULL;
 	}	
-	}*/
+}
 
 bool Quadtree::ADJ(QuadtreeNode* quadrantRoot, QuadtreeNode* rootRemoval, QuadtreeNode* nodeRemoval, int quadrantAdjId, int quadrantCandId) {
   if(quadrantRoot) {
@@ -283,16 +296,22 @@ void Quadtree::remove(const Point& p) {
 	}
       }
       else candidateQuadrant = finalCandidates[0];
-      // The conjugate quadrant remains the same.
-      candidates[candidateQuadrant]->quadrants[conjugate(candidateQuadrant+1)-1] = node->quadrants[conjugate(candidateQuadrant+1)-1];
-      candidates[candidateQuadrant]->quadrants[(candidateQuadrant+1)%4] = node->quadrants[(candidateQuadrant+1)%4];
-      candidates[candidateQuadrant]->quadrants[(candidateQuadrant+3)%4] = node->quadrants[(candidateQuadrant+3)%4];
-      *node = *candidates[candidateQuadrant];
       // Adjacent quadrants to the one containing the candidate new root.
-      ADJ(node->quadrants[(candidateQuadrant+1)%4],candidates[candidateQuadrant],node,(candidateQuadrant+1)%4+1,candidateQuadrant+1);
-      ADJ(node->quadrants[(candidateQuadrant+3)%4],candidates[candidateQuadrant],node,(candidateQuadrant+3)%4+1,candidateQuadrant+1);
-	//NewRoot(node->quadrants[candidateQuadrant],conjugate(candidateQuadrant+1)-1);
-      cout << "Reinsertions: " << endl;
+		
+	QuadtreeNode* q = node->quadrants[(candidateQuadrant+1)%4];
+	node->quadrants[(candidateQuadrant+1)%4] = NULL;
+	bool newInsertion = ADJ(q,candidates[candidateQuadrant],node,(candidateQuadrant+1)%4+1,candidateQuadrant+1);
+	if(not newInsertion) node->quadrants[(candidateQuadrant+1)%4] = q;
+	q = node->quadrants[(candidateQuadrant+3)%4];
+	node->quadrants[(candidateQuadrant+3)%4] = NULL;
+	newInsertion =  ADJ(q,candidates[candidateQuadrant],node,(candidateQuadrant+3)%4+1,candidateQuadrant+1);
+	if(not newInsertion) node->quadrants[(candidateQuadrant+3)%4] = q;
+			
+	NewRoot(node->quadrants[candidateQuadrant],candidates[candidateQuadrant],node,conjugate(candidateQuadrant+1)-1);
+      
+	node->point = candidates[candidateQuadrant]->point;
+	
+	cout << "Reinsertions: " << endl;
       for(int i = 0; i < reinsertions.size(); i++) {
 	insert(reinsertions[i]);
 	cout << reinsertions[i]->point << endl;

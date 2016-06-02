@@ -95,7 +95,7 @@ private:
 
   bool ADJ(QuadtreeNode* quadrantRoot,  QuadtreeNode* rootRemoval, QuadtreeNode* nodeRemoval, int quadrantAdjId, int quadrantCandId);
   
-  //void NewRoot(QuadtreeNode* quadrantRoot, int direction);
+  void NewRoot(QuadtreeNode* quadrantRoot, QuadtreeNode* rootRemoval, QuadtreeNode* nodeRemoval, int direction);
 
   void removeTerminalNode(const Point& p);
 
