@@ -117,6 +117,51 @@ void Quadtree::regionsearch_rec(QuadtreeNode* node, int L, int R, int B, int T){
 	if (node->quadrants[3] and rectangle_overlaps_region(x,R,B,y)) regionsearch_rec(node->quadrants[3],x,R,B,y);	
 }
 
+Point Quadtree::nearestNeighbor(const Point& p) const {
+}
+
+vector<Point> Quadtree::partialMatchRec(QuadtreeNode* node, const Point& p) const {
+  vector<Point> matches;
+  if(node) {
+    int quad1, quad2;
+    if(p.x < INT_MAX) {
+      if(node->point.x == p.x) {
+	matches.push_back(node->point);
+	quad1 = NE; quad2 = SE;
+      }
+      else if(node->point.x < p.x) {
+	quad1 = NE; quad2 = SE;
+      }
+      else {
+	quad1 = NW; quad2 = SW;
+      }
+    }
+    else if(p.y < INT_MAX) {
+      if(node->point.y == p.y) {
+	matches.push_back(node->point);
+	quad1 = NE; quad2 = NW;
+      }
+      else if(node->point.y > p.y) {
+	quad1 = SW; quad2 = SE;
+      }
+      else {
+	quad1 = NE; quad2 = NW;
+      }
+    }
+    vector<Point> res = partialMatchRec(node->quadrants[quad1-1],p);
+    matches.insert(matches.end(),res.begin(),res.end());
+    res = partialMatchRec(node->quadrants[quad2-1],p);
+    matches.insert(matches.end(),res.begin(),res.end());
+  }
+  return matches;
+}
+
+vector<Point> Quadtree::partialMatch(const Point& p) const {
+  if(root) 
+    return partialMatchRec(root,p);
+  return vector<Point>();
+}
+
 int Quadtree::conjugate(int n) const {
   return ((n+1) % 4) + 1;
 }

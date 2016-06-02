@@ -101,6 +101,8 @@ private:
 
   bool search_rec(QuadtreeNode* node, const Point& p);
   
+  vector<Point> partialMatchRec(QuadtreeNode* node, const Point& p) const;
+
   QuadtreeNode* searchNode(QuadtreeNode* node, const Point& p);
 
   bool in_region(const Point& p);
@@ -122,6 +124,10 @@ public:
   void search(const Point& p);
 
   void regionsearch(int L, int R, int B, int T);
+
+  vector<Point> partialMatch(const Point& p) const;
+
+  Point nearestNeighbor(const Point& p) const;
 
   void remove(const Point& p);
 
