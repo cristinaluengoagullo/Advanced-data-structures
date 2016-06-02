@@ -5,7 +5,10 @@ Quadtree::Quadtree() {
 }
   
 Quadtree::~Quadtree() {
-  root->deleteNode();
+	if(root){
+		root->deleteNode();
+		root = NULL;
+	}
 }
 
 int Quadtree::compare(const Point& p, QuadtreeNode* node) {
@@ -290,20 +293,23 @@ void Quadtree::removeTerminalNode(const Point& p) {
   if(root) {
     int direction = compare(p,root);
     if(not direction) root = NULL;
-    QuadtreeNode** quadrant = &(root->quadrants[direction-1]);
-    while(*quadrant) {
-      direction = compare(p,*quadrant);
-      if(not direction) {
-	*quadrant = NULL;
-	break;
-      }
+    else{
+	QuadtreeNode** quadrant = &(root->quadrants[direction-1]);
+	while(*quadrant) {
+		direction = compare(p,*quadrant);
+		if(not direction) {
+		*quadrant = NULL;
+		break;
+		}
       quadrant = &((*quadrant)->quadrants[direction-1]);
+	}
     }
   }
 }
 
 void Quadtree::remove(const Point& p) {
-  QuadtreeNode* node = searchNode(root,p);
+  QuadtreeNode* node = NULL;
+  if(root) node = searchNode(root,p);
   if(node) {
     reinsertions = vector<QuadtreeNode*>();
     bool terminalNode = true;
@@ -353,7 +359,7 @@ void Quadtree::remove(const Point& p) {
 	if(not newInsertion) node->quadrants[(candidateQuadrant+3)%4] = q;
 			
 	NewRoot(node->quadrants[candidateQuadrant],candidates[candidateQuadrant],node,conjugate(candidateQuadrant+1)-1);
-      
+      if(node->quadrants[candidateQuadrant] == candidates[candidateQuadrant])node->quadrants[candidateQuadrant] = NULL;
 	node->point = candidates[candidateQuadrant]->point;
 	
 	cout << "Reinsertions: " << endl;
