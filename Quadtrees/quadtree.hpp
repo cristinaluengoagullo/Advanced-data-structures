@@ -61,9 +61,7 @@ struct QuadtreeNode {
     for(int i = 0; i < 4; i++) {
       if(quadrants[i]) 
 	quadrants[i]->deleteNode();
-    }
-    for(int i = 0; i < 4; i++) {
-      delete quadrants[i];
+	quadrants[i]=NULL;
     }
   }
 };

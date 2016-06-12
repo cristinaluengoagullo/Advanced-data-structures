@@ -1,19 +1,6 @@
 #include "quadtree.hpp"
 #include <string>
 
-
-
-/* info
- * show
- * insert
- * example
- * remove
- * search
- * region
- * exit
- */
-
-
 Point getpoint(string input){
 		int i = 0;
 		int a,b;
@@ -35,7 +22,7 @@ int main() {
 	Quadtree root;
 	string input;
 	cout << endl << "---------- Choose an option ----------" << endl;
-	cout << endl << "shows: prints the quadtree." << endl;
+    cout << endl << "show: prints the quadtree." << endl;
 	cout << "example: loads the example quadtree." << endl;
 	cout << "clean: resets the whole tree." << endl;
 	cout << "insert (a,b): inserts point (a,b) in the tree." << endl;
@@ -46,7 +33,7 @@ int main() {
 	cout << endl << "--> ";
 	while(cin>>input){
 		if(input.find("info") != string::npos){
-			cout << endl << "shows: prints the quadtree." << endl;
+            cout << endl << "show: prints the quadtree." << endl;
 			cout << "example: loads the example quadtree." << endl;
 			cout << "clean: resets the whole tree." << endl;
 			cout << "insert (a,b): inserts point (a,b) in the tree." << endl;
@@ -55,11 +42,11 @@ int main() {
 			cout << "region [L, R, B, T]: prints all nodes inside the region."<< endl;
 			cout << "exit: closes the app."<< endl;
 		}
-		if(input.find("show") != string::npos) root.showQuadtree();
-		if(input.find("clean") != string::npos){
+        else if(input.find("show") != string::npos) root.showQuadtree();
+        else if(input.find("clean") != string::npos){
 			root.~Quadtree();
 		}
-		if(input.find("example") != string::npos){
+        else if(input.find("example") != string::npos){
 		  root.~Quadtree();
 			Point A(0,0);
 			Point F(12,8);
@@ -93,7 +80,7 @@ int main() {
 			
 			cout << "Example loaded" << endl;
 		}
-		if(input.find("insert") != string::npos){
+        else if(input.find("insert") != string::npos){
 			cin >> input;
 			Point p = getpoint(input);
 			if(p.x == INT_MAX or p.y == INT_MAX) cout << "invalid point to insert" << endl;
@@ -102,7 +89,7 @@ int main() {
 				cout << "point inserted" << endl;
 			}
 		}
-		if(input.find("remove") != string::npos){
+        else if(input.find("remove") != string::npos){
 			cin >> input;
 			Point p = getpoint(input);
 			root.remove(p);
@@ -113,7 +100,7 @@ int main() {
 			}
 			
 		}
-		if(input.find("search") != string::npos){
+        else if(input.find("search") != string::npos){
 			cin >> input;
 			Point p = getpoint(input);
 			if(p.x == INT_MAX or p.y == INT_MAX){
@@ -125,7 +112,7 @@ int main() {
 			}
 			else root.search(p);
 		}
-		if(input.find("region") != string::npos){
+        else if(input.find("region") != string::npos){
 			cin >> input;
 			int i = 0;
 			int l,r,b,t;
@@ -145,7 +132,7 @@ int main() {
 			t = stoi(coord4);
 			root.regionsearch(l,r,b,t);
 		}
-		if(input.find("exit") != string::npos) break;
+        else if(input.find("exit") != string::npos) break;
 		else cout << "Wrong option!" << endl;
 		cout << "--> ";
 	}
