@@ -157,6 +157,8 @@ template <class T> void Set<T>::remove(const T& x) {
     while((currHeight > 1 ) and ((head->forward[currHeight]->getKey() == tail->getKey())))
       currHeight--;
   }
+  //delete[] update;
+  //delete tmp;
 }
 
 template <class T> bool Set<T>::contains(const T& x) const {

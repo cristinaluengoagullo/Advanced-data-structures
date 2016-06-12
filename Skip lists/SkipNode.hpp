@@ -11,7 +11,7 @@ public:
 
   // forward has all the pointers that point to the next horizontal level of the list
   // at each height. 
-  vector<SkipNode*> forward;
+  SkipNode** forward;
 
   // Constructor, creates an empty node and sets the node parameters key and height 
   // to the given values.
@@ -38,14 +38,22 @@ private:
 
 template <class T> SkipNode<T>::SkipNode(T _key, int _height) : key(_key), height(_height) {
   // We initialize all forward pointers to null
-  forward = vector<SkipNode*>(_height+1,NULL);
+  forward = new SkipNode<T>* [_height+1];
 }
 
 template <class T> SkipNode<T>::SkipNode(int _height) : height(_height) {
-  forward = vector<SkipNode*>(_height+1,NULL);
+  forward = new SkipNode<T>* [_height+1];
 }
 
-template <class T> SkipNode<T>::~SkipNode() { }
+template <class T> SkipNode<T>::~SkipNode() { 
+  delete[] forward;
+  /*cout << "entra" << endl;
+  int n = forward.size();
+  for(int i = 0; i < n; i++) {
+    cout << "i = " << i << endl; 
+    delete forward[0]; 
+    }*/
+}
 
 template <class T> T SkipNode<T>::getKey() const {
   return key;
